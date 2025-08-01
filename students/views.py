@@ -8,6 +8,7 @@ from .models import Student, PhysicalTest, StudentTestResult
 from .forms import StudentForm, ImportStudentsForm
 import pandas as pd
 from datetime import datetime
+from schools.models import Class
 
 class StudentListView(ListView):
     model = Student
@@ -148,3 +149,55 @@ def import_students(request):
         form = ImportStudentsForm()
 
     return render(request, 'students/import_students.html', {'form': form})
+
+def get_classes_by_school(request):
+    """AJAX view to get classes filtered by school"""
+    school_id = request.GET.get('school_id')
+    classes = []
+    
+    if school_id:
+        classes = list(Class.objects.filter(school_id=school_id).values(
+            'id', 'grade', 'section'
+        ))
+        # Format the display text
+        for class_obj in classes:
+            class_obj['display'] = f"Grade {class_obj['grade']} - Section {class_obj['section']}"
+    
+    return JsonResponse({'classes': classes})
+
+# Updated StudentCreateView and StudentUpdateView in students/views.py
+class StudentCreateView(CreateView):
+    model = Student
+    form_class = StudentForm
+    template_name = 'students/student_form.html'
+    success_url = reverse_lazy('students:list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Student created successfully!')
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add schools and classes to context for the form
+        from schools.models import School, Class
+        context['schools'] = School.objects.all()
+        context['classes'] = Class.objects.all()
+        return context
+
+class StudentUpdateView(UpdateView):
+    model = Student
+    form_class = StudentForm
+    template_name = 'students/student_form.html'
+    success_url = reverse_lazy('students:list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Student updated successfully!')
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add schools and classes to context for the form
+        from schools.models import School, Class
+        context['schools'] = School.objects.all()
+        context['classes'] = Class.objects.all()
+        return context

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import HttpResponse, FileResponse
@@ -17,6 +18,102 @@ class ReportListView(ListView):
     template_name = 'reports/report_list.html'
     context_object_name = 'reports'
     paginate_by = 20
+
+# def generate_report_view(request):
+#     if request.method == 'POST':
+#         report_type = request.POST.get('report_type')
+        
+#         try:
+#             if report_type == 'individual':
+#                 student_id = request.POST.get('student_id')
+#                 student = get_object_or_404(Student, pk=student_id)
+                
+#                 # Generate individual report
+#                 file_path = generate_individual_report(student_id)
+                
+#                 # Create report record
+#                 report = Report.objects.create(
+#                     title=f"Individual Report - {student.name}",
+#                     report_type='individual',
+#                     generated_by=request.user if request.user.is_authenticated else None,
+#                     file_path=file_path
+#                 )
+                
+#                 messages.success(request, f'Individual report generated successfully for {student.name}!')
+                
+#             elif report_type == 'class':
+#                 class_id = request.POST.get('class_id')
+#                 class_obj = get_object_or_404(Class, pk=class_id)
+                
+#                 # Generate class report
+#                 file_path = generate_class_report(class_id)
+                
+#                 # Create report record
+#                 report = Report.objects.create(
+#                     title=f"Class Report - {class_obj}",
+#                     report_type='class',
+#                     generated_by=request.user if request.user.is_authenticated else None,
+#                     file_path=file_path
+#                 )
+                
+#                 messages.success(request, f'Class report generated successfully for {class_obj}!')
+                
+#             elif report_type == 'school':
+#                 school_id = request.POST.get('school_id')
+#                 school = get_object_or_404(School, pk=school_id)
+                
+#                 # Generate school report
+#                 file_path = generate_school_report(school_id)
+                
+#                 # Create report record
+#                 report = Report.objects.create(
+#                     title=f"School Report - {school.name}",
+#                     report_type='school',
+#                     generated_by=request.user if request.user.is_authenticated else None,
+#                     file_path=file_path
+#                 )
+                
+#                 messages.success(request, f'School report generated successfully for {school.name}!')
+            
+#             return redirect('reports:list')
+            
+#         except Exception as e:
+#             messages.error(request, f'Error generating report: {str(e)}')
+    
+#     # Get data for form
+#     context = {
+#         'students': Student.objects.select_related('class_assigned__school').all(),
+#         'classes': Class.objects.select_related('school').all(),
+#         'schools': School.objects.all(),
+#     }
+    
+#     return render(request, 'reports/generate_report.html', context)
+
+def generate_individual_report_view(request, student_id):
+    """Generate individual report directly for a specific student"""
+    try:
+        student = get_object_or_404(Student, pk=student_id)
+        
+        # Generate individual report
+        file_path = generate_individual_report(student_id)
+        
+        # Create report record
+        report = Report.objects.create(
+            title=f"Individual Report - {student.name}",
+            report_type='individual',
+            generated_by=request.user if request.user.is_authenticated else None,
+            file_path=file_path
+        )
+        
+        messages.success(request, f'Individual report generated successfully for {student.name}!')
+        
+        # Redirect to download the report immediately
+        return redirect('reports:download', pk=report.pk)
+        
+    except Exception as e:
+        messages.error(request, f'Error generating report: {str(e)}')
+        return redirect('students:detail', pk=student_id)
+
 
 def generate_report_view(request):
     """Main report generation view"""
@@ -103,3 +200,16 @@ def download_report(request, report_id):
     else:
         messages.error(request, 'Report file not found')
         return redirect('reports:list')
+    
+def delete_report(request, pk):
+    if request.method == 'POST':
+        report = get_object_or_404(Report, pk=pk)
+        
+        # Delete file if exists
+        if report.file_path and os.path.exists(report.file_path.path):
+            os.remove(report.file_path.path)
+        
+        report.delete()
+        messages.success(request, 'Report deleted successfully!')
+    
+    return redirect('reports:list')

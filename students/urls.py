@@ -9,4 +9,5 @@ urlpatterns = [
     path('create/', views.StudentCreateView.as_view(), name='create'),
     path('<int:pk>/update/', views.StudentUpdateView.as_view(), name='update'),
     path('import/', views.import_students, name='import'),
+    path('ajax/classes/', views.get_classes_by_school, name='get_classes_by_school'),
 ]
