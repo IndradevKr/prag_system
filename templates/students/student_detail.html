@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ student.name }} - PARG System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- Student Information -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">
+                    <i class="fas fa-user me-2"></i>{{ student.name }}
+                </h3>
+                <div class="btn-group">
+                    <a href="{% url 'students:update' student.pk %}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-1"></i>Edit
+                    </a>
+                    <a href="{% url 'reports:generate_individual' student.pk %}" class="btn btn-outline-success">
+                        <i class="fas fa-file-pdf me-1"></i>Generate Report
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Test Name</th>
+                                    <th>Score</th>
+                                    <th>Unit</th>
+                                    <th>Percentile</th>
+                                    <th>Test Date</th>
+                                    <th>Comment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for result in test_results %}
+                                    <tr>
+                                        <td>{{ result.test.name }}</td>
+                                        <td><strong>{{ result.score }}</strong></td>
+                                        <td>{{ result.test.unit }}</td>
+                                        <td>{{ result.percentile|default:"-" }}</td>
+                                        <td>{{ result.test_date|date:"M d, Y" }}</td>
+                                        <td>{{ result.comment|default:"-" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Test Results</h5>
+                        <p class="text-muted">Physical test results will appear here once tests are conducted.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- BMI Information -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-weight me-2"></i>BMI Information</h5>
+            </div>
+            <div class="card-body text-center">
+                <h2 class="display-4 mb-3">{{ student.bmi|floatformat:1 }}</h2>
+                <p class="lead mb-3">
+                    {% if student.bmi_category == 'underweight' %}
+                        <span class="badge bg-warning fs-6">Underweight</span>
+                    {% elif student.bmi_category == 'healthy' %}
+                        <span class="badge bg-success fs-6">Healthy Weight</span>
+                    {% elif student.bmi_category == 'overweight' %}
+                        <span class="badge bg-warning fs-6">Overweight</span>
+                    {% else %}
+                        <span class="badge bg-danger fs-6">Obese</span>
+                    {% endif %}
+                </p>
+                
+                <div class="progress mb-3" style="height: 20px;">
+                    <div class="progress-bar 
+                        {% if student.bmi_category == 'underweight' %}bg-warning
+                        {% elif student.bmi_category == 'healthy' %}bg-success
+                        {% elif student.bmi_category == 'overweight' %}bg-warning
+                        {% else %}bg-danger{% endif %}"
+                        role="progressbar" 
+                        style="width: {% if student.bmi < 18.5 %}25{% elif student.bmi < 25 %}50{% elif student.bmi < 30 %}75{% else %}100{% endif %}%">
+                    </div>
+                </div>
+                
+                <small class="text-muted">
+                    BMI = Weight (kg) / Height² (m²)
+                </small>
+            </div>
+        </div>
+
+        <!-- Performance Summary -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Performance Summary</h5>
+            </div>
+            <div class="card-body">
+                {% if student.percentile %}
+                    <p><strong>Overall Percentile:</strong> {{ student.percentile }}</p>
+                {% endif %}
+                {% if student.performance_group %}
+                    <p><strong>Performance Group:</strong> {{ student.performance_group }}</p>
+                {% endif %}
+                {% if student.overall_comment %}
+                    <p><strong>Overall Comment:</strong></p>
+                    <p class="text-muted">{{ student.overall_comment }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{% url 'students:list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i>Back to Students
+    </a>
+</div>
+{% endblock %}
